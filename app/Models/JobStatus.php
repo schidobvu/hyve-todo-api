@@ -20,6 +20,11 @@ class JobStatus extends Model
         'result' => 'array',
     ];
 
+    public static function findByUuid(string $uuid): ?self
+    {
+        return self::where('id', $uuid)->where('user_id', auth()->id())->firstOrFail();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
