@@ -10,6 +10,10 @@ class GetJobStatusController extends Controller
     public function __invoke(string $uuid): JsonResponse
     {
         $jobStatus = JobStatus::findByUuid($uuid);
-        return $this->respond()->ok($jobStatus)->message('Job status retrieved successfully.')->json();
+        return $this->respond()
+            ->ok($jobStatus)
+            ->key('job_status')
+            ->message('Job status retrieved successfully.')
+            ->json();
     }
 }

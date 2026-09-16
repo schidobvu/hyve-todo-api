@@ -1,67 +1,543 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Layered Todo REST API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A production-ready, versioned Todo REST API built with **Laravel 10**, featuring a strict layered architecture, **JWT authentication**, and **asynchronous Redis queue processing**.
 
-## About Laravel
+The application is designed to demonstrate clean separation of concerns using the following flow:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Controller → Service → Repository**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+| Technology | Purpose |
+|---|---|
+| PHP 8.2 | Application runtime |
+| Laravel 10 | REST API framework |
+| JWT (`tymon/jwt-auth`) | API authentication |
+| MySQL | Relational database |
+| Redis | Queue backend and asynchronous processing |
+| Docker Sail | Local containerized development environment |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Architecture
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The application follows a layered architecture to keep responsibilities clearly separated:
 
-## Laravel Sponsors
+```text
+HTTP Request
+     │
+     ▼
+Controller
+     │
+     ▼
+FormRequest
+     │
+     ▼
+Service
+     │
+     ▼
+Repository Interface
+     │
+     ▼
+Repository Implementation
+     │
+     ▼
+Eloquent / Database
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Controllers
 
-### Premium Partners
+Controllers are intentionally kept thin. Their responsibilities include:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+- Receiving HTTP requests
+- Delegating validation to Form Requests
+- Calling the appropriate Service
+- Returning API responses
 
-## Contributing
+Business logic should not be placed directly inside controllers.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Services
 
-## Code of Conduct
+Services contain application and business logic.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+They coordinate operations between controllers, repositories, jobs, and other application components without coupling the HTTP layer directly to database implementations.
 
-## Security Vulnerabilities
+### Repositories
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The Repository Pattern provides an abstraction between the application and Eloquent.
+
+Repository interfaces are bound to their concrete implementations through `AppServiceProvider`, allowing the underlying persistence implementation to be changed without requiring changes to the service layer.
+
+---
+
+## Key Features
+
+### JWT Authentication
+
+The API uses JWT authentication through `tymon/jwt-auth`.
+
+Authenticated requests use the API guard and the authenticated user's ID is used to scope Todo operations.
+
+### User Isolation
+
+Todo records and background operations are strictly scoped to the authenticated user.
+
+```php
+auth('api')->id()
+```
+
+This ensures that users can only access and manipulate their own Todo records.
+
+### Asynchronous Bulk Processing
+
+Bulk Todo actions are processed asynchronously using Laravel Jobs and Redis.
+
+The flow is:
+
+```text
+API Request
+    │
+    ▼
+Dispatch BulkCompleteTodosJob
+    │
+    ▼
+Redis Queue
+    │
+    ▼
+Queue Worker
+    │
+    ▼
+Process Todos
+    │
+    ▼
+Update job_statuses
+```
+
+Instead of keeping the HTTP request open while a potentially large operation executes, the API dispatches a `BulkCompleteTodosJob` to Redis and returns a tracking UUID.
+
+The client can then use the tracking UUID to poll the operation status.
+
+---
+
+## Prerequisites
+
+Make sure the following are installed on your development machine:
+
+- Docker
+- Docker Compose
+- Git
+
+The application runs PHP, MySQL, and Redis through Docker Sail, so PHP and Composer do not need to be installed directly on the host machine.
+
+---
+
+## Local Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone git@github.com:schidobvu/hyve-todo-api.git
+cd hyve-todo-api
+```
+
+### 2. Install PHP Dependencies
+
+If dependencies are not already installed:
+
+```bash
+docker run --rm     -u "$(id -u):$(id -g)"     -v "$(pwd):/var/www/html"     -w /var/www/html     laravelsail/php82-composer:latest     composer install
+```
+
+Alternatively, if Composer is available locally:
+
+```bash
+composer install
+```
+
+### 3. Configure the Environment
+
+Create the local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Make sure the database and Redis configuration matches the Docker Sail services defined by the project.
+
+### 4. Start Docker Containers
+
+Start the application containers:
+
+```bash
+./vendor/bin/sail up -d
+```
+
+Check the running containers:
+
+```bash
+./vendor/bin/sail ps
+```
+
+### 5. Generate Application and JWT Keys
+
+Generate the Laravel application key:
+
+```bash
+./vendor/bin/sail artisan key:generate
+```
+
+Generate the JWT secret:
+
+```bash
+./vendor/bin/sail artisan jwt:secret
+```
+
+### 6. Run Migrations and Seeders
+
+Create the database schema and seed the database:
+
+```bash
+./vendor/bin/sail artisan migrate --seed
+```
+
+### 7. Start the Queue Worker
+
+Bulk Todo operations are processed asynchronously through Redis.
+
+Start the queue worker:
+
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+Keep the queue worker running while testing asynchronous functionality.
+
+---
+
+## Running the Application
+
+Once Sail is running, the API will be available through the application's configured Sail port.
+
+You can check the configured ports with:
+
+```bash
+./vendor/bin/sail ps
+```
+
+For the default Laravel Sail setup, the application is typically available at:
+
+```text
+http://localhost
+```
+
+---
+
+## Running Tests
+
+Run the automated test suite inside the Docker Sail environment:
+
+```bash
+./vendor/bin/sail test
+```
+
+You can also run a specific test file:
+
+```bash
+./vendor/bin/sail artisan test tests/Feature/ExampleTest.php
+```
+
+For more detailed output:
+
+```bash
+./vendor/bin/sail test --verbose
+```
+
+---
+
+## Useful Sail Commands
+
+Start the containers:
+
+```bash
+./vendor/bin/sail up -d
+```
+
+Stop the containers:
+
+```bash
+./vendor/bin/sail down
+```
+
+View container status:
+
+```bash
+./vendor/bin/sail ps
+```
+
+View application logs:
+
+```bash
+./vendor/bin/sail logs
+```
+
+Open a shell inside the application container:
+
+```bash
+./vendor/bin/sail shell
+```
+
+Run Artisan commands:
+
+```bash
+./vendor/bin/sail artisan <command>
+```
+
+Run Composer commands:
+
+```bash
+./vendor/bin/sail composer <command>
+```
+
+---
+
+## Queue Processing
+
+The application uses Redis as its queue backend.
+
+Start the worker with:
+
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+For development, the worker can be left running in a separate terminal.
+
+When a bulk operation is submitted, the application:
+
+1. Creates a job status record.
+2. Generates a tracking UUID.
+3. Dispatches `BulkCompleteTodosJob` to the Redis queue.
+4. Returns the tracking UUID to the client.
+5. Processes the operation asynchronously.
+6. Updates the corresponding `job_statuses` record.
+7. Allows the client to poll the operation status.
+
+This approach prevents long-running bulk operations from unnecessarily blocking API requests.
+
+---
+
+## Configuration
+
+Important environment variables include:
+
+```dotenv
+APP_NAME=hyve-todo-api
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost:8080
+APP_PORT=8080
+
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=hyve-todo
+DB_USERNAME=sail
+DB_PASSWORD=password
+
+QUEUE_CONNECTION=redis
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+```
+
+Use the values appropriate for your local Sail configuration.
+
+Do not commit your `.env` file or production secrets to source control.
+
+---
+
+## Project Structure
+
+The application follows Laravel's standard directory structure while separating application responsibilities into layers.
+
+A typical structure is:
+
+```text
+app/
+├── Http/
+│   ├── Controllers/
+│   └── Requests/
+│
+├── Jobs/
+│
+├── Models/
+│
+├── Repositories/
+│   ├── Contracts/
+│   └── Eloquent/
+│
+├── Services/
+│
+└── Providers/
+    └── AppServiceProvider.php
+
+database/
+├── factories/
+├── migrations/
+└── seeders/
+
+routes/
+└── api.php
+
+tests/
+├── Feature/
+└── Unit/
+```
+
+The exact structure may vary depending on the implementation.
+
+---
+
+## Design Principles
+
+### Separation of Concerns
+
+Each layer has a clearly defined responsibility:
+
+- **Controllers** handle HTTP concerns.
+- **Form Requests** handle request validation.
+- **Services** handle business/application logic.
+- **Repositories** handle data access.
+- **Jobs** handle asynchronous processing.
+- **Models** represent persisted data.
+
+### Dependency Inversion
+
+Services depend on repository contracts rather than concrete Eloquent repository implementations.
+
+Bindings are registered through `AppServiceProvider`.
+
+This keeps business logic independent from the persistence implementation.
+
+### Stateless Authentication
+
+JWT authentication allows the API to authenticate requests without relying on server-side session state.
+
+### Asynchronous Processing
+
+Long-running bulk operations are delegated to Redis-backed queue workers rather than being executed entirely within the HTTP request lifecycle.
+
+---
+
+## Testing Strategy
+
+The project includes automated tests covering the API and application behavior.
+
+Tests should verify areas such as:
+
+- Authentication
+- Todo creation
+- Todo retrieval
+- Todo updates
+- Todo deletion
+- User isolation
+- Validation
+- Bulk Todo operations
+- Job dispatching
+- Job status tracking
+- Repository/service behavior
+
+Run the full suite with:
+
+```bash
+./vendor/bin/sail test
+```
+
+---
+
+## Git Workflow
+
+Before committing changes, run the test suite:
+
+```bash
+./vendor/bin/sail test
+```
+
+Then review the changes:
+
+```bash
+git status
+git diff
+```
+
+Commit the changes:
+
+```bash
+git add .
+git commit -m "Your commit message"
+```
+
+---
+
+## Troubleshooting
+
+### Sail command not found
+
+Make sure dependencies have been installed:
+
+```bash
+composer install
+```
+
+Then verify that Sail exists:
+
+```bash
+ls vendor/bin/sail
+```
+
+### Containers are not running
+
+Check the container status:
+
+```bash
+./vendor/bin/sail ps
+```
+
+Start the containers:
+
+```bash
+./vendor/bin/sail up -d
+```
+
+### Queue jobs are not processing
+
+Make sure Redis and the queue worker are running:
+
+```bash
+./vendor/bin/sail ps
+```
+
+Then start the worker:
+
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+### Database connection errors
+
+Make sure the MySQL container is running and that the database settings in `.env` match the Sail configuration.
+
+Then run:
+
+```bash
+./vendor/bin/sail artisan migrate
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# hyve-todo-api
+This project is intended for demonstration and development purposes unless a separate license is provided with the repository.
