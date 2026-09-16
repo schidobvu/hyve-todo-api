@@ -17,13 +17,7 @@ class GetTodoController extends Controller
 
     public function __invoke(Todo $todo): JsonResponse
     {
-        $userId = auth('api')->id();
-
-        if ($todo->{'user_id'} !== $userId) {
-            return $this->respond()->unauthorized('Unauthorized action. You do not own this todo.')->json();
-        }
-
-        $todoData = $this->todoService->getTodoForUser($userId, $todo->getKey());
+        $todoData = $this->todoService->getTodoForUser(auth()->id(), $todo->getKey());
 
         return $this->respond()
             ->ok($todoData)

@@ -18,9 +18,9 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', CreateTodoController::class);
 
         Route::group(['prefix' => '{todo}'], function () {
-            Route::get('/', GetTodoController::class);
-            Route::put('/', UpdateTodoController::class);
-            Route::delete('/', DeleteTodoController::class);
+            Route::get('/', GetTodoController::class)->middleware('can:view,todo');;
+            Route::put('/', UpdateTodoController::class)->middleware('can:update,todo');
+            Route::delete('/', DeleteTodoController::class)->middleware('can:delete,todo');
         });
 
         Route::post('/bulk-complete', BulkCompleteTodoController::class);
