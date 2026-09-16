@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Job\GetJobStatusController;
 use App\Http\Controllers\Todo\BulkCompleteTodoController;
 use App\Http\Controllers\Todo\CreateTodoController;
@@ -10,7 +11,10 @@ use App\Http\Controllers\Todo\UpdateTodoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 
-Route::post('auth/login', LoginController::class);
+Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
+    Route::post('/register', RegisterController::class);
+    Route::post('/login', LoginController::class);
+});
 
 Route::middleware('auth:api')->group(function () {
 
