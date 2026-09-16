@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\LoginController;
 Route::post('auth/login', LoginController::class);
 
 Route::middleware('auth:api')->group(function () {
+
     Route::prefix('todos')->group(function () {
         Route::get('/', ListTodosController::class);
         Route::post('/', CreateTodoController::class);
