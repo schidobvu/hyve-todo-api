@@ -17,10 +17,6 @@ class UpdateTodoController extends Controller
 
     public function __invoke(UpdateTodoRequest $request, Todo $todo): JsonResponse
     {
-        if ($todo->{'user_id'} !== auth()->id()) {
-            return $this->respond()->unauthorized('Unauthorized action. You do not own this todo.')->json();
-        }
-
         $updatedTodo = $this->todoService->updateTodo($todo, $request->validated());
 
         return $this->respond()

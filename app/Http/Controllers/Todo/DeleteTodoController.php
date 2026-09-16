@@ -16,10 +16,6 @@ class DeleteTodoController extends Controller
 
     public function __invoke(Todo $todo): JsonResponse
     {
-        if ($todo->{'user_id'} !== auth()->id()) {
-            return $this->respond()->unauthorized('Unauthorized action. You do not own this todo.')->json();
-        }
-
         $this->todoService->deleteTodo($todo);
 
         return $this->respond()->ok()->json();
