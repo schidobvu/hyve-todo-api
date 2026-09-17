@@ -14,12 +14,12 @@ class LoginTest extends TestCase
     public function test_user_can_login_with_valid_credentials(): void
     {
         $user = User::factory()->create([
-            'email' => 'samsonchidobvu@gmail.com',
+            'email' => 'sam@gmail.com',
             'password' => bcrypt('12345678'),
         ]);
 
         $response = $this->post('/api/v1/auth/login', [
-            'email' => 'samsonchidobvu@gmail.com',
+            'email' => 'sam@gmail.com',
             'password' => '12345678',
         ]);
 
@@ -51,12 +51,12 @@ class LoginTest extends TestCase
     public function test_user_cannot_login_with_invalid_password(): void
     {
         User::factory()->create([
-            'email' => 'samsonchidobvu@gmail.com',
+            'email' => 'sam@gmail.com',
             'password' => bcrypt('12345678'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'sammy@gmail.com',
+            'email' => 'sam@gmail.com',
             'password' => '123',
         ]);
 
