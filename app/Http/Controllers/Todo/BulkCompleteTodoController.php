@@ -18,9 +18,8 @@ class BulkCompleteTodoController extends Controller
     public function __invoke(BulkCompleteTodoRequest $request): JsonResponse
     {
         $todoIds = $request->validated('todo_ids');
-        $userId = auth('api')->id();
 
-        $jobStatus = $this->todoService->bulkCompleteAsync($userId, $todoIds);
+        $jobStatus = $this->todoService->bulkCompleteAsync(auth()->id(), $todoIds);
 
         return $this->respond()
             ->accepted([

@@ -5,14 +5,15 @@ namespace App\Services\Todo;
 use App\Jobs\BulkCompleteTodosJob;
 use App\Models\JobStatus;
 use App\Models\Todo;
+use App\Repositories\Contracts\JobStatusRepositoryInterface;
 use App\Repositories\Contracts\TodoRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
 
 class TodoService
 {
     public function __construct(
-        protected TodoRepositoryInterface $todoRepository
+        protected TodoRepositoryInterface $todoRepository,
+        protected JobStatusRepositoryInterface $jobStatusRepository
     )
     {
     }
@@ -48,16 +49,9 @@ class TodoService
 
     public function bulkCompleteAsync(int $userId, array $todoIds): JobStatus
     {
-        $jobStatus = JobStatus::create([
-            'id' => (string)Str::uuid(),
-            'user_id' => $userId,
-            'type' => 'bulk_complete',
-            'status' => 'pending',
-            'payload' => ['todo_ids' => $todoIds],
-        ]);
+        $jobStatus = $this->jobStatusRepository->createBulkCompleteJob($userId, $todoIds);
 
         BulkCompleteTodosJob::dispatch($jobStatus->id, $userId, $todoIds);
 
         return $jobStatus;
-    }
-}
+    }}

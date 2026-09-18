@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Todo;
 use App\Services\Todo\TodoService;
 use Illuminate\Http\JsonResponse;
+
 class DeleteTodoController extends Controller
 {
     public function __construct(
@@ -18,6 +19,6 @@ class DeleteTodoController extends Controller
     {
         $this->todoService->deleteTodo($todo);
 
-        return $this->respond()->ok()->json();
+        return $this->respond()->ok()->message('Todo deleted successfully.')->json();
     }
 }
