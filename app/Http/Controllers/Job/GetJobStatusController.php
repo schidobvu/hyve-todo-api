@@ -18,7 +18,7 @@ class GetJobStatusController extends Controller
     {
         $jobStatus = $this->jobStatusRepository->findForUser($uuid, auth()->id());
 
-        if (!$jobStatus) return $this->respond()->notFound()->message("Job not found")->json();
+        if (!$jobStatus) return $this->respond()->notFound()->message("Job status not found")->json();
 
         return $this->respond()
             ->ok($jobStatus)

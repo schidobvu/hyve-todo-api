@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\GetProfileController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Job\GetJobStatusController;
 use App\Http\Controllers\Todo\BulkCompleteTodoController;
@@ -17,7 +18,7 @@ Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
 });
 
 Route::middleware('auth:api')->group(function () {
-    Route::get('/auth/me', \App\Http\Controllers\Auth\GetProfileController::class);
+    Route::get('/auth/me', GetProfileController::class);
 
     Route::prefix('todos')->group(function () {
         Route::get('/', ListTodosController::class);
