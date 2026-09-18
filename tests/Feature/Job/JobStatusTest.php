@@ -4,7 +4,6 @@ namespace Tests\Feature\Job;
 
 use App\Models\JobStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class JobStatusTest extends TestCase
@@ -15,12 +14,9 @@ class JobStatusTest extends TestCase
     {
         $this->login();
 
-        $jobStatus = JobStatus::create([
-            'id' => (string) Str::uuid(),
+        $jobStatus = JobStatus::factory()->create([
             'user_id' => $this->user->getKey(),
-            'type' => 'bulk_complete',
             'status' => 'completed',
-            'payload' => ['todo_ids' => [1, 2, 3]],
             'result' => ['updated_count' => 3],
         ]);
 
@@ -38,5 +34,4 @@ class JobStatusTest extends TestCase
                 ],
             ]);
     }
-
 }

@@ -2,22 +2,24 @@
 
 namespace Database\Factories;
 
+use App\Models\JobStatus;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\JobStatus>
- */
 class JobStatusFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = JobStatus::class;
+
     public function definition(): array
     {
         return [
-            //
+            'id' => (string) Str::uuid(),
+            'user_id' => User::factory(),
+            'type' => 'bulk_complete',
+            'status' => 'completed',
+            'payload' => ['todo_ids' => [1, 2, 3]],
+            'result' => ['updated_count' => 3],
         ];
     }
 }
